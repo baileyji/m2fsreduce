@@ -69,7 +69,7 @@ function printrvstat, spectra
     
     rvb=dblarr(nspec)
     fiberno=intarr(nspec)
-    for i = 0, nspec-1 do rvb[i]=(*spectra[i]).fitparams[ysas_rv_param_ndx]*3d8 $
+    for i = 0, nspec-1 do rvb[i]=(*spectra[i]).fitparams[ysas_rv_param_ndx]*299792458d $
             + (*spectra[i]).ysasheader.baryv
     for i = 0, nspec-1 do fiberno[i]=(*spectra[i]).fiberno
     
@@ -165,10 +165,32 @@ fitSpectra, snrspectra, '', temp_logg, airmass, results, $
 
 stop
 
-fitSpectra, spectra, '', temp_logg, airmass, results, $
-	CONFIG=getM2FSfitconfig('loose', tol=1d-6), STATUS=STATUS, CHISQUARE_LIMIT=1000d, $
-	MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~DOFIT, CHISQUARE_THRESH=1
+fitSpectra, snrspectra[, '', temp_logg, airmass, results, $
+	CONFIG=getM2FSfitconfig('all', tol=1d-6, wavescalemult=1), STATUS=STATUS, $
+	CHISQUARE_LIMIT=30000d, $
+	MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~snrdofit, CHISQUARE_THRESH=1
 
+
+
+tmp=dblarr(3,ysas_max_num_fit_params) & for i=0,2 do tmp[i,*]=(*spectra[i]).fitparams
+for i=0, 2 do primelambdasoln,*spectra[i],49, /pick_manually
+for i=0,2 do (*spectra[i]).fitparams[ysas_veiling_param_ndx]=0
+for i=0,2 do (*spectra[i]).fitparams[ysas_psf_param_ndxs]=o49psf
+for i=0,2 do (*spectra[i]).fitparams[ysas_norm_offset_param_ndxs]=[0,0]
+fitSpectra, snrspectra[0:2], '', temp_logg, airmass, results, $
+    CONFIG=getM2FSfitconfig('nostellar', tol=1d-10), STATUS=STATUS, CHISQUARE_LIMIT=30000d, $
+    MAX_FITSPECTRA_CYCLES=15, EXCLUDE=~snrdofit[0:2], CHISQUARE_THRESH=.01;,SCALE_CHANGE=.5
+for i=0,2 do (*spectra[i]).fitparams[ysas_veiling_param_ndx]=tmp[i,ysas_veiling_param_ndx]
+
+fitSpectra, snrspectra[0:2], '', temp_logg, airmass, results, $
+    CONFIG=getM2FSfitconfig('all', tol=1d-10,rvfine=100,wavescalemult=.1), $
+    STATUS=STATUS, CHISQUARE_LIMIT=30000d, $
+    MAX_FITSPECTRA_CYCLES=15, EXCLUDE=~snrdofit[0:2], $
+    CHISQUARE_THRESH=.1,RV_THRESH=.5
+
+
+(*spectra[2]).fitparams=[o49wave,o49psf, .63, .4, vsini, .6, rv/3d8, 0, .01]
+; (*snrspectra[2]).fitparams[ysas_rv_param_ndx]=((*snrspectra[1]).fitparams[ysas_rv_param_ndx]*3d8 + (*snrspectra[1]).ysasheader.baryv - (*snrspectra[2]).ysasheader.baryv)/3d8
 stop
-plotspectrumfit
+
 end
