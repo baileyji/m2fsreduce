@@ -24,6 +24,118 @@ function simpleWavelengthSolnGuess, spec
 	return, [c,a,replicate(0,n_elements(ysas_wavelength_param_ndxs)-2)]
 end
 
+pro picklineinterface, spec, params, info,fit_region,datapt,datai,WAVE=wave
+    common ysas_common
+    common ysas_debug
+    telluricSpectrum=getTelluricSpectrum(spec)      ;+2 pointers
+    synthSpectrum=getSynthSpectra(spec.synthspec, spec) ;+2 pointers
+    
+    pix=indgen(spec.nPixels)
+    mask=indgen(ysas_fit_region[1]-ysas_fit_region[0]+1)+ysas_fit_region[0]
+    
+    model = computeSpectralModel(pix, synthSpectrum, telluricSpectrum, $                                                        +6 pointers
+        params, spectrum = spec, bad_model = bad_model, /USE_ZSPACE, $
+        pixel_wavelengths = wave,/RETURN_INTENSITIES,telluric_out=tspec,$
+        synth_out=synspec)
+    
+    tonlyparams=params
+    tonlyparams[ysas_veiling_param_ndx]=0
+    tonly = computeSpectralModel(pix, synthSpectrum, telluricSpectrum, $                                                        +6 pointers
+        tonlyparams, bad_model = bad_model, /USE_ZSPACE, $
+        /RETURN_INTENSITIES)
+    sonlyparams=params
+    sonlyparams[ysas_airmass_param_ndx]=0
+    sonly = computeSpectralModel(pix, synthSpectrum, telluricSpectrum, $                                                        +6 pointers
+            sonlyparams, bad_model = bad_model, /USE_ZSPACE, $
+            /RETURN_INTENSITIES)
+
+    residuals=(*spec.intensities) - model
+    
+ 
+    ;Pixel space plot for clicking
+    getwindow,0,xsize=2300,ysize=700,/erase
+    wait,.1
+    padding=60
+    xrange=[pix[mask[0]]-padding,pix[mask[-1]]+padding]
+    pltn=0
+    plot,mask,sonly[mask],ytitle='Synth',title='Reference Plots',xr=xrange, $
+        /xs,_EXTRA=gang_plot_pos(4,1,pltn++, OFFSET=[.03,.1],size=[.96,.85]), $
+        yr=[0,1.2],/ys
+    plot,mask,tonly[mask],ytitle='Tellu',xr=xrange, yr=[0,1.2],/ys,$
+        /xs,_EXTRA=gang_plot_pos(4,1,pltn++, OFFSET=[.03,.1],size=[.96,.85])    
+    plot,pix[mask], model[mask], YTITLE='Model', title='Alignment Plots', $
+        xr=xrange, yr=[0,1.2],/ys,$
+        /xs,_EXTRA=gang_plot_pos(4,1,pltn++, OFFSET=[.03,.1],size=[.96,.85])
+        
+    
+    plot,pix[mask],median((*spec.intensities)[mask],5),ytitle='Spec', $
+        xr=xrange,/xs, yr=[0,1.2],/ys,$
+       _EXTRA=gang_plot_pos(4,1,pltn++, OFFSET=[.03,.1],size=[.96,.85])
+    oplot,pix[mask], model[mask], color=2
+    
+    
+    if keyword_set(datai) gt 0 then begin 
+        oplot,[datapt[0:datai-1].x],[datapt[0:datai-1].y],psym=2,color=3
+    endif
+
+    info[5]=4*(!y.crange[1]-!y.crange[0])+!y.crange[0]
+    info[4]=!y.crange[0]
+    info[2]=!x.crange[0]
+    info[3]=!x.crange[1]
+
+    ptr_free, telluricSpectrum.intensities, telluricSpectrum.wavelengths, $                                                     -4 pointers
+                 synthSpectrum.intensities, synthSpectrum.wavelengths
+
+end
+
+
+pro picklines, spec, line_centers, wid_wave, wid_pix
+
+    common ysas_common
+    maxpts=100
+    datapt=replicate({x:0d,y:0d},maxpts)
+    pointi=0
+    getdata=1b
+    info=[0d,3d,0d,0d,0d,0d]
+    fit_region=ysas_fit_region
+    params=spec.fitparams
+    
+    points_reqd=n_elements(ysas_wavelength_param_ndxs)+1
+    
+    
+    print,''
+    print,'Click a line center on the spectrum, '+$
+        'Repeat at least n+1 times.'
+    print,'Click off the image when finished.'
+
+    picklineinterface,spec,params,info,fit_region
+    repeat begin
+        CURSOR,x0,y0,/data,/down
+
+        off= (x0 lt info[2] or x0 gt info[3] or y0 lt info[4] or y0 gt info[5])
+
+        print,x0,y0,off,getdata
+        if ~off then begin
+            datapt[pointi].x=x0
+            datapt[pointi].y=y0
+            pointi++
+        endif
+        off= (pointi ge 2*points_reqd and off)
+        
+        picklineinterface,spec,params,info,fit_region,datapt,pointi,WAVE=wave
+    endrep until off
+    
+    
+    ;return the line centers
+    wid_pix=datapt[1:pointi-1:2].x-datapt[0:pointi-1:2].x
+    
+    cent_pix=round(wid_pix/2.0+datapt[0:pointi-1:2].x)
+    wid_pix=round(wid_pix)
+    wid_wave=wave[round(datapt[1:pointi-1:2].x)]-wave[round(datapt[0:pointi-1:2].x)]
+    line_centers=wave[cent_pix]
+
+end
+
 
 pro line_locations, order, line_wave, wid_wave, wid_pix
 
@@ -33,11 +145,11 @@ pro line_locations, order, line_wave, wid_wave, wid_pix
 	wid_pix_o49=replicate(15,n_elements(line_wave_o49))
 	wid_wave_o49=replicate(.00010,n_elements(line_wave_o49))
 	
-	line_wave_o49=[0.71679313d, 0.71774360, 0.71845511, 0.71863334, 0.71915326, $
-		0.71936858, 0.72012327, 0.72043332, 0.72329326, 0.72347507, 0.72407463, $
-		0.72645955, 0.72730036, 0.72774024]
-	wid_pix_o49=replicate(15,n_elements(line_wave_o49))
-	wid_wave_o49=replicate(.00010,n_elements(line_wave_o49))
+;	line_wave_o50=[0.71679313d, 0.71774360, 0.71845511, 0.71863334, 0.71915326, $
+;		0.71936858, 0.72012327, 0.72043332, 0.72329326, 0.72347507, 0.72407463, $
+;		0.72645955, 0.72730036, 0.72774024]
+;	wid_pix_o50=replicate(15,n_elements(line_wave_o50))
+;	wid_wave_o50=replicate(.00010,n_elements(line_wave_o50))
 	
 	if order eq 49 then begin
 		line_wave=line_wave_o49
@@ -51,13 +163,13 @@ pro line_locations, order, line_wave, wid_wave, wid_pix
 
 end
 
-pro primelambdasoln, spec, rv, vsini, first_guess=first_guess
+pro primelambdasoln, spec, order, rv, vsini, first_guess=first_guess, pick_manually=pick_manually
 
 
 	common ysas_common
 	common ysas_debug
 
-	if ~keyword_set(first_guess) then begin
+	if keyword_set(first_guess) then begin
 		;Phase One: Get a halfway decent solution
 		;Define a fitting configuration
 		psfguess=[3d-5, replicate(0, n_elements(ysas_psf_param_ndxs)-1)]
@@ -107,17 +219,22 @@ pro primelambdasoln, spec, rv, vsini, first_guess=first_guess
 			spec.fitparams=(*spectra[0]).fitparams
 			ptr_free,spectra[0]
 		endelse
-	endif else begin
-		spec.fitparams=first_guess
-	endelse
+	endif
 
-	;Get the line information	
-	line_locations, order, line_wave, wid_wave, wid_pix
+	;Get the line information
+	if keyword_set(pick_manually) then begin
+	    ;picklines, spec, line_wave, wid_wave, wid_pix
+	    restore, 'line_locations.sav'
+	endif else begin
+    	line_locations, order, line_wave, wid_wave, wid_pix
+	endelse
+	
 	
 	;Compute the model
 	telluricSpectrum=getTelluricSpectrum(spec)
 	synthSpectrum=getSynthSpectra(spec.synthspec, spec)
 	pix=indgen(spec.nPixels)
+	params=spec.fitparams
 	model = computeSpectralModel(pix, synthSpectrum, $
 		telluricSpectrum, params, spectrum = spec, /USE_ZSPACE, $
 		pixel_wavelengths = wave, /RETURN_INTENSITIES, telluric_out=tspec)
@@ -136,7 +253,7 @@ pro primelambdasoln, spec, rv, vsini, first_guess=first_guess
 		
 		;Find the nearest large minimum in the spectrum and get it's pixel
 		; position, pix_center
-		junk=min(wave - line_wave[i], pix_center)
+		junk=min(abs(wave - line_wave[i]), pix_center)
 		 
 		;Extract a width about that pixel position & fit with a gaussian
 		x_pix=indgen(wid_pix[i])-wid_pix[i]/2+pix_center
@@ -155,7 +272,7 @@ pro primelambdasoln, spec, rv, vsini, first_guess=first_guess
 
 		;Plot the two fits along with a region of the spectrum for acceptance
 		xrange=[x_pix[0]-75,x_pix[-1]+75]
-		plot,pix[mask], (*spec.intensities)[mask], $
+		plot,pix, (*spec.intensities), $
 			YTITLE='Data (white) Tellurics (red)', title='Line Plot', $
 			xr=xrange,/xs
 
@@ -173,8 +290,8 @@ pro primelambdasoln, spec, rv, vsini, first_guess=first_guess
 		col++
 
 		;Accept if the user clicks in the top half, reject in the lower half
-		CURSOR,x0,y0,/down
-		if  y0 gt .5 then begin
+		choice=clickquad()
+		if  choice gt 1 then begin
 			obs_cent[*,i]=[fit_pix[1],fit_wave[1]]
 			print, obs_cent[*,i]
 		endif
@@ -184,11 +301,15 @@ pro primelambdasoln, spec, rv, vsini, first_guess=first_guess
 	!p.multi=0
 	
 	;Compute a wavelength solution
-	soln=poly_fit(obs_cent[*,0],obs_cent[*,1],$
-		n_elements(ysas_wavelength_param_ndxs)-1)
+	obs_cent=transpose(obs_cent)
+	soln=reform(poly_fit(obs_cent[*,0],obs_cent[*,1],$
+		n_elements(ysas_wavelength_param_ndxs)-1))
 	print, soln
+	print, mean((wave-computewavelengthsoln(pix,soln))[ysas_fit_region[0]:ysas_fit_region[1]])
 	
-	destroySpec,[telluricSpectrum, synthSpectrum, tspec]
+	destroySpec,telluricSpectrum
+	destroyspec,synthSpectrum
+	destroyspec,tspec
 	
 	spec.fitparams[ysas_wavelength_param_ndxs]=soln
 	
