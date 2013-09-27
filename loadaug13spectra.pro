@@ -40,34 +40,45 @@ common ysas_common
 
 datadir='/Users/one/Desktop/M2FS Commissioning Run/'
 
-spectra=ptrarr(2+7*6*2+6*2)
+spectra=ptrarr(3+7*6*2+6*2)
 ndx=0
 
-;Grab RV standard spectra
 ysas_fit_region=[350,3000]
-;sfile=datadir+'spectra/ap2.txt'
-;spectra[ndx]=readMarioSpecFile(sfile, 49, $
-;	temp_logg='5500_4.55', $
-;	image_file=datadir+'image/r0090.fits', $
-;	fiber='R5-02', $
-;	objname='HIP 10798', $
-;	nom_vsini=3.26d, $
-;	nom_rv=7000,/PTR)
-;(*spectra[ndx]).fiberno=anum
-;ndx+=1
-;
-;sfile=datadir+'spectra/ap2.txt'
-;spectra[ndx]=readMarioSpecFile(sfile, 49, $
-;	temp_logg='5500_4.55', $
-;	image_file='image/r0109.fits', $
-;	fiber='R5-02', $
-;	objname='HIP 10798', $
-;	nom_vsini=3.26d, $
-;	nom_rv=7000,/PTR)
-;(*spectra[ndx]).fiberno=anum
-;ndx+=1
 
-ndx=2
+;Grab RV standard spectra
+sfile=datadir+'spectra/r0089.ec_2.txt'
+spectra[ndx]=readMarioSpecFile(sfile, 49, $
+	temp_logg='5500_4.55', $
+	image_file=datadir+'image/r0089.fits', $
+	fiber='R5-02', $
+	objname='HIP 10798', $
+	nom_vsini=3.26d, $
+	nom_rv=7000,/PTR)
+(*spectra[ndx]).fiberno=5*16+2
+ndx+=1
+
+sfile=datadir+'spectra/r0090.ec_2.txt'
+spectra[ndx]=readMarioSpecFile(sfile, 49, $
+	temp_logg='5500_4.55', $
+	image_file=datadir+'image/r0090.fits', $
+	fiber='R5-02', $
+	objname='HIP 10798', $
+	nom_vsini=3.26d, $
+	nom_rv=7000,/PTR)
+(*spectra[ndx]).fiberno=5*16+2
+ndx+=1
+
+sfile=datadir+'spectra/r0109.ec_2.txt'
+spectra[ndx]=readMarioSpecFile(sfile, 49, $
+   temp_logg='5500_4.55', $
+   image_file=datadir+'image/r0109.fits', $
+   fiber='R5-02', $
+   objname='HIP 10798', $
+   nom_vsini=3.26d, $
+   nom_rv=7000,/PTR)
+(*spectra[ndx]).fiberno=5*16+2
+ndx+=1
+
 
 ;Load the R side data
 	
