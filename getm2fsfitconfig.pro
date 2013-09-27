@@ -21,7 +21,7 @@ function getM2FSFitConfig, type, tol=tol, wavescalemult=wavescalemult, RVFINE=RV
 	vsiniscale=5
 	
 	rvscale=25000/3d8
-    rvscale = keyword_set(RVFINE) ? 10/3d8: rvscale
+    rvscale = keyword_set(RVFINE) ? RVFINE/3d8: rvscale
 	
 	
 	waveub=[1,1,1,1,1,1,1,1]
