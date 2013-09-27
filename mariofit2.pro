@@ -63,7 +63,29 @@ function reviewspecs, spectra
 	
 end
 
+function printrvstat, spectra
+    common ysas_common
+    nspec=n_elements(spectra)
+    
+    rvb=dblarr(nspec)
+    fiberno=intarr(nspec)
+    for i = 0, nspec-1 do rvb[i]=(*spectra[i]).fitparams[ysas_rv_param_ndx]*3d8 $
+            + (*spectra[i]).ysasheader.baryv
+    for i = 0, nspec-1 do fiberno[i]=(*spectra[i]).fiberno
+    
+    fiberset=fiberno[uniq(fiberno,sort(fiberno))]
+    
+    rvb_stats=dblarr(n_elements(fiberset),3)
+    for i=0,n_elements(fiberset)-1 do begin
+        j=fiberset[i]
+        ndxs=where(fiberno eq j, nrvs)
+        rvb_stats[i,*]=[mean(rvb[ndxs]), stddev(rvb[ndxs]), nrvs]
+        print,(*spectra[ndxs[0]]).specfile,',',strjoin(rvb_stats[i,*],',')
+    endfor
 
+    return,rvb_stats
+
+end
 
 compile_opt idl2
 
