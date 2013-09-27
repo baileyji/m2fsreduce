@@ -132,26 +132,25 @@ o49init=[o49waveprimer,  o49psf, .63, .4, vsini, .6, rv/3d8, 0, .01]
 
 ;Grab the spectra
 snr_limit=12
-spectra=loadAug13Spectra()
+;spectra=loadAug13Spectra()
+;spectra=spectra[where(spectra ne ptr_new(),nspec)]
+;
+;
+;for i=0, nspec-1 do (*spectra[i]).fitparams=o49init
+;		;Do this so I can call plotspectrumfit
+;for i=0, nspec-1 do (*spectra[i]).fitregion=strjoin(strtrim(ysas_fit_region,1),',')
+;for i=0, nspec-1 do (*spectra[i]).fitparams[ysas_rv_param_ndx]=(*spectra[i]).ysasheader.baryv/3d8
+;
+;endfor
+;
+;
+;dofit=reviewspecs(spectra)
+
+restore,'./Desktop/spectra.sav'
 spectra=spectra[where(spectra ne ptr_new(),nspec)]
-
-
-for i=0, nspec-1 do begin
-
-		(*spectra[i]).fitparams=o49init
-		;Do this so I can call plotspectrumfit
-		(*spectra[i]).fitregion=strjoin(strtrim(ysas_fit_region,1),',')
-		(*spectra[i]).fitparams[ysas_rv_param_ndx]=$
-			(*spectra[i]).ysasheader.baryv/3d8
-
-endfor
-
-
-dofit=reviewspecs(spectra)
-
 ;Filter based on snr
 snr=dblarr(nspec)
-for i=0,nspec-1 do snr[i]=computes2n(*spectra[i],ysas_fit_region)
+for i=0,nspec-1 do snr[i]=computes2n(*spectra[i],[1200,2500])
 snrspectra=spectra[where(snr gt snr_limit,nspec)]
 snrdofit=dofit[where(snr gt snr_limit,nspec)]
 
@@ -159,9 +158,9 @@ snrdofit=dofit[where(snr gt snr_limit,nspec)]
 
 ;Phase One
 stop
-fitSpectra, spectra, '', temp_logg, airmass, results, $
+fitSpectra, snrspectra, '', temp_logg, airmass, results, $
 	CONFIG=getM2FSfitconfig('init', tol=1d-6), STATUS=STATUS, $
-	CHISQUARE_LIMIT=1000d, MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~DOFIT, $
+	CHISQUARE_LIMIT=30000d, MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~snrdofit, $
 	CHISQUARE_THRESH=1d
 
 stop
