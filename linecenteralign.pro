@@ -247,13 +247,17 @@ pro primelambdasoln, spec, order, rv, vsini, first_guess=first_guess, pick_manua
 	getwindow,1,xsize=1000,ysize=500,/erase
 	col=2
 	
+	fit_region_ndxs=rnggen(ysas_fit_region[0],ysas_fit_region[1])
+	
 	;Fit each of the lines
+	npts=0
 	for i=0,n_elements(line_wave)-1 do begin
 		
 		
 		;Find the nearest large minimum in the spectrum and get it's pixel
 		; position, pix_center
-		junk=min(abs(wave - line_wave[i]), pix_center)
+		junk=min(abs(wave[fit_region_ndxs] - line_wave[i]), pix_center)
+		pix_center=fit_region_ndxs[pix_center]
 		 
 		;Extract a width about that pixel position & fit with a gaussian
 		x_pix=indgen(wid_pix[i])-wid_pix[i]/2+pix_center
@@ -292,25 +296,31 @@ pro primelambdasoln, spec, order, rv, vsini, first_guess=first_guess, pick_manua
 		;Accept if the user clicks in the top half, reject in the lower half
 		choice=clickquad()
 		if  choice gt 1 then begin
-			obs_cent[*,i]=[fit_pix[1],fit_wave[1]]
-			print, obs_cent[*,i]
+			obs_cent[*,npts]=[fit_pix[1],fit_wave[1]]
+			print, obs_cent[*,npts]
+			npts++
 		endif
 
 
 	endfor
 	!p.multi=0
 	
-	;Compute a wavelength solution
-	obs_cent=transpose(obs_cent)
-	soln=reform(poly_fit(obs_cent[*,0],obs_cent[*,1],$
-		n_elements(ysas_wavelength_param_ndxs)-1))
-	print, soln
-	print, mean((wave-computewavelengthsoln(pix,soln))[ysas_fit_region[0]:ysas_fit_region[1]])
+	if npts gt n_elements(ysas_wavelength_param_ndxs) then begin
+    	;Compute a wavelength solution
+    	obs_cent=transpose(obs_cent)
+    	soln=reform(poly_fit(obs_cent[0:npts-1,0],obs_cent[0:npts-1,1],$
+    		n_elements(ysas_wavelength_param_ndxs)-1))
+        
+        spec.fitparams[ysas_wavelength_param_ndxs]=soln
+
+    	print, soln
+    	print, mean((wave-computewavelengthsoln(pix,soln))[ysas_fit_region[0]:ysas_fit_region[1]])
+	endif else message,'Not enough points to update solution',/info
 	
 	destroySpec,telluricSpectrum
 	destroyspec,synthSpectrum
 	destroyspec,tspec
 	
-	spec.fitparams[ysas_wavelength_param_ndxs]=soln
+	
 	
 end
