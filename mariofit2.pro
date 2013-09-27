@@ -31,28 +31,28 @@ function reviewspecs, spectra
 			else: dofit[coadd[i]]=1
 		endcase
 	endfor
-	
+    
 	;Copy the initial guesses into the non coadded frames
 	for i=0, n_elements(coadd)-1 do begin
 		if dofit[coadd[i]] then begin
 			match=where(fiberno eq (*spectra[coadd[i]]).fiberno, nmatch)
 			for j=0,nmatch-1 do begin
 
-				(*spectra[j]).fitparams=(*spectra[coadd[i]]).fitparams
+				(*spectra[match[j]]).fitparams=(*spectra[coadd[i]]).fitparams
 	
-				plotspectrumfit,*spectra[j],xr=ysas_fit_region,$
-					star=file_basename((*spectra[j]).specfile)
+				plotspectrumfit,*spectra[match[j]],xr=ysas_fit_region,$
+					star=file_basename((*spectra[match[j]]).specfile)
 					
 				choice=clickquad()
 				
 				case choice of
-					0: dofit[j]=0
+					0: dofit[match[j]]=0
 					1: begin
-						manual_calibrate_alignment,*spectra[j],$
-							(*spectra[j]).fitparams,out, order=2
-						(*spectra[j]).fitparams=out
+						manual_calibrate_alignment,*spectra[match[j]],$
+							(*spectra[match[j]]).fitparams,out, order=2
+						(*spectra[match[j]]).fitparams=out
 					end
-					else: dofit[j]=1
+					else: dofit[match[j]]=1
 				endcase
 				
 			endfor
