@@ -1,0 +1,43 @@
+How to run FINDTRACE.PRO
+
+Currently, findtrace requires a structure to be input with FILENAME, HEADER, FLUX,
+ERR and MASK tags.  That structure can be easily be created or the program can also
+be easily changed.  Run it like this:
+
+fits_read,'r0104.fits',im,head
+str={filename:'r0104.fits',header:head,flux:float(im),err:sqrt(float(im>1)),mask:long(im*0)}
+findtrace,str,tracestr,dcr=4,halfwid=8,npts=40
+
+The output is the TRACESTR structure with one element per order.  It looks like this:
+
+IDL> help,/st,tracestr
+** Structure <18d9608>, 15 tags, length=184, data length=174, refs=1:
+   PEAKY           FLOAT           1775.00
+   WTY             FLOAT           0.00000
+   GAUSSY          FLOAT           1774.97
+   FWHM            FLOAT           7.40444
+   HEIGHT          FLOAT           2458.71
+   GCOEF           FLOAT     Array[3]
+   FITCOEF         DOUBLE    Array[5]
+   SIGCOEF         DOUBLE    Array[5]
+   RMS             FLOAT         0.0873235
+   CHISQ           DOUBLE           17.549959
+   MODELCOEF       FLOAT     Array[5]
+   FIXED           INT              0
+   COEF            FLOAT     Array[5]
+   FIRSTX          LONG               446
+   LASTX           LONG              4095
+
+FITCOEF gives the polynomial coefficients to get the Y-values for an order.  Y=poly(X,coef)
+SIGCOEF are the uncertainties in FITCOEF.
+RMS and CHISQ are for the polynomial fit to the flux-weighted Y-values of the order.
+FIRSTX and LASTX give roughly the first/last X-vales for this order.
+FWHM gives the FWHM of the order (at the central X-value) in the Y-dimension.
+PEAKY, WTY and GAUSSY give the Y-value at the central X-value using various methods.
+GASSY, HEIGHT, WFHM and GCOEF are from Gaussian-fitting (in the spatial/Y-dimension)
+  at the central X-value.
+At the end of the program it fits the FITCOEF parameters for all orders as a function of Y
+  and tries to correct "outliers".  That's the MODELCOEF array.  If the original fitted
+  parameters are considered "bad" and the model parameters are used then FIXED=1 else
+  FIXED=0.
+
