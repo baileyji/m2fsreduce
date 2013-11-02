@@ -1,4 +1,4 @@
-#from numpy import *
+#!/usr/bin/env python2.7
 import numpy as np
 from astropy.io import fits
 import re
@@ -8,17 +8,26 @@ import astropy.stats
 
 def mergeimage(frameno,side=None):
     if side == None:
-        mergeimage(frameno,side='r')
-        mergeimage(frameno,side='b')
-        #return
+        try:
+            mergeimage(frameno,side='r')
+        except IOError:
+            print 'Need all quadrants for r{}'.format(frameno)
+        try:
+            mergeimage(frameno,side='b')
+        except IOError:
+            print 'Need all quadrants for b{}'.format(frameno)
+        return
+
     basename=side+'{frameno:04}'
     f=basename+'c{quad}.fits'
 
-    quadrant1=fits.open(f.format(frameno=frameno, quad=1))
-    quadrant2=fits.open(f.format(frameno=frameno, quad=2))
-    quadrant3=fits.open(f.format(frameno=frameno, quad=3))
-    quadrant4=fits.open(f.format(frameno=frameno, quad=4))
-
+    try:
+        quadrant1=fits.open(f.format(frameno=frameno, quad=1))
+        quadrant2=fits.open(f.format(frameno=frameno, quad=2))
+        quadrant3=fits.open(f.format(frameno=frameno, quad=3))
+        quadrant4=fits.open(f.format(frameno=frameno, quad=4))
+    except IOError, e:
+        raise e
 
     #Grab the bias and crop region from the first quadrant
     biassec=quadrant1[0].header['BIASSEC']
@@ -41,7 +50,11 @@ def mergeimage(frameno,side=None):
                  quadrant3[0].data, quadrant4[0].data]
 
     for i, qdata in enumerate(quadrantData):
-
+        
+        #Compute & subtract mean bias row
+        biasrow=np.mean(qdata[bias[2]:,:],axis=0)
+        qdata-=biasrow
+        
         #Compute mean for overscan region rowwise
         biaslevels=np.mean(qdata[crop[2]-1:crop[3],bias[0]-1:bias[1]],axis=1)
 
@@ -61,14 +74,17 @@ def mergeimage(frameno,side=None):
             out[quadLoc[i][0]:quadLoc[i][1],
                 quadLoc[i][2]:quadLoc[i][3]]=np.rot90(np.fliplr(qdata),2)
 
+    #Flip so it is in agreement with Mario's process
+    out=np.flipud(out)
+    
     #Write out the merged file
     hdu = fits.PrimaryHDU(out)
     hdu.header=quadrant1[0].header
     hdu.header.pop('TRIMSEC')
     hdu.header.pop('BIASSEC')
     hdu.header.pop('DATASEC')
-    hdu.header['FILENAME']=basename
-    hdu.writeto(basename+'.fits')
+    hdu.header['FILENAME']=basename.format(frameno=frameno)
+    hdu.writeto(basename.format(frameno=frameno)+'.fits')
 
 
 def makesuperbias(filenos, side, name):
@@ -143,3 +159,9 @@ def makesuperflat(filenos, side, name, superbias=None):
     hdu.header['COMMENT']=','.join(map(str,filenos))+',Bias:'+str(superbias)
     hdu.writeto(name+'.fits')
 
+if __name__ =='__main__':
+    import glob
+    files = glob.glob('*c?.fits')
+    seqnos=set([ int(x[1:-7]) for x in files])
+    for i in seqnos:
+        mergeimage(i)
