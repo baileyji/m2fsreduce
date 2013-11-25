@@ -50,8 +50,8 @@ o50wave=[714.68180d-3,   3.6283054e-06,   3.8202046e-09,   -4.9249632e-12,$
 
 
 
-o49init=[o49wave,  o49psf, .63, .4, vsini, .6, rv/3d8, 0, .01]
-o50init=[o50wave,  o50psf, .63, .4, vsini, .6, rv/3d8, 0, .01]
+o49init=[o49wave,  o49psf, .63, .4, vsini, .6, rv/299792458d, 0, .01]
+o50init=[o50wave,  o50psf, .63, .4, vsini, .6, rv/299792458d, 0, .01]
 
 ;Define tolerance
 tol=1d-11
@@ -125,7 +125,7 @@ allconfig={fixed:fixed $
 	,ub:[waveub, psfub,   2, 2,   25,  .0005d,   0.5, 40000] $
 	,lb:[wavelb, psflb,  .1,.1,   .1, -.0005d,   -.5,-40000] $
 	,params: dblarr(ysas_MAX_NUM_FIT_PARAMS) $
-	,scale:[wavescale, psfscale, .1, .1, 1, 25000/3d8, 0.01, 0.001] $
+	,scale:[wavescale, psfscale, .1, .1, 1, 25000/299792458d, 0.01, 0.001] $
 	,mode:'Final' $
 	,fftenable:0b $
 	,fromexisting:1b $
@@ -176,13 +176,13 @@ stop
 end
 
 ;manual_calibrate_alignment,o49,o49fit.fitparams,out
-;manual_calibrate_alignment,o49,[o49wave,  3d-5, .677, .3, vsini ,.6, 13302/3d8, 0, .01],out
+;manual_calibrate_alignment,o49,[o49wave,  3d-5, .677, .3, vsini ,.6, 13302/299792458d, 0, .01],out
 
 ;
-;manual_calibrate_alignment,o50,[o50wave,  psfparams, .677, .3, vsini ,.6, 13302/3d8, 0, .01],out
+;manual_calibrate_alignment,o50,[o50wave,  psfparams, .677, .3, vsini ,.6, 13302/299792458d, 0, .01],out
 
 
-;[o50wave,  3d-5, .7, .3, vsini, .6, 13302/3d8, 0, .01]
+;[o50wave,  3d-5, .7, .3, vsini, .6, 13302/299792458d, 0, .01]
 
 ;first try o49:
 ;0.71449728   5.1479318e-06  -1.0776708e-10   6.6942156e-05      0.67692639      0.30263929       3.6783614      0.60000002   4.4342719e-05    0.0027254524    -0.015491522

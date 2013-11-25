@@ -174,7 +174,7 @@ pro primelambdasoln, spec, order, rv, vsini, first_guess=first_guess, pick_manua
 		;Define a fitting configuration
 		psfguess=[3d-5, replicate(0, n_elements(ysas_psf_param_ndxs)-1)]
 		init=[simpleWavelengthSolnGuess(spec), $
-			  psfguess,  .63, .4, vsini, .6, rv/3d8, 0, .01]
+			  psfguess,  .63, .4, vsini, .6, rv/299792458d, 0, .01]
 		wavescale=[5d-3, 1d-7, 1d-11, 1d-13,1d-16,1d-19,1d-23,1d-27]
 		psfsigmascale=1d-5
 		psfhieghtscale=replicate(.01,8)
@@ -189,7 +189,7 @@ pro primelambdasoln, spec, order, rv, vsini, first_guess=first_guess, pick_manua
 			,ub:[waveub, psfub,   2, 2,   25,  .0005d,   0.5, 40000] $
 			,lb:[wavelb, psflb,  .1,.1,   .1, -.0005d,   -.5,-40000] $
 			,params: dblarr(ysas_MAX_NUM_FIT_PARAMS) $
-			,scale:[wavescale, psfscale, .1, .1, 1, 25000/3d8, 0.01, 0.001] $
+			,scale:[wavescale, psfscale, .1, .1, 1, 25000/299792458d, 0.01, 0.001] $
 			,mode:'Final' $
 			,fftenable:0b $
 			,fromexisting:1b $

@@ -16,19 +16,21 @@ function getM2FSFitConfig, type, tol=tol, wavescalemult=wavescalemult, RVFINE=RV
 	wavescale*=wavescalemult
 	
 	psfsigmascale=1d-5 ; about 2 pixels
-	psfhieghtscale=replicate(.01,8)
+	psfhieghtscale=replicate(.1,8)
 	
 	vsiniscale=5
 	
-	rvscale=25000/3d8
-    rvscale = keyword_set(RVFINE) ? RVFINE/3d8: rvscale
+	rvscale=25000/299792458d
+    rvscale = keyword_set(RVFINE) ? RVFINE/299792458d: rvscale
 	
+	vsini_ub=25
+    vsini_lb=-25
 	
 	waveub=[1,1,1,1,1,1,1,1]
 	wavelb=[-1,-1,-1,-1,-1,-1,-1,-1]
 	
-	psfub=replicate(2,n_elements(ysas_psf_param_ndxs))
-	psflb=replicate(-2,n_elements(ysas_psf_param_ndxs))
+	psfub=replicate(100,n_elements(ysas_psf_param_ndxs))
+	psflb=replicate(-100,n_elements(ysas_psf_param_ndxs))
 	
 	;Define different fitting configurations
 	
@@ -134,8 +136,8 @@ function getM2FSFitConfig, type, tol=tol, wavescalemult=wavescalemult, RVFINE=RV
     fixed[ysas_veiling_param_ndx]=0
     fixed[ysas_norm_offset_param_ndxs]=0
     nocalibconfig={fixed:fixed $
-        ,ub:[2,   25,  .0005d,   0.5, 40000]  $
-        ,lb:[0,   .001, -.0005d,   -.5,-40000]  $
+        ,ub:[2,   vsini_ub,  .0005d,   0.5, 40000]  $
+        ,lb:[0,   vsini_lb, -.0005d,   -.5,-40000]  $
         ,params: dblarr(ysas_MAX_NUM_FIT_PARAMS) $
         ,scale:[.1, vsiniscale, rvscale, 0.01, 0.001] $
         ,mode:'Final' $
@@ -150,8 +152,8 @@ function getM2FSFitConfig, type, tol=tol, wavescalemult=wavescalemult, RVFINE=RV
 	fixed[*]=0
 	fixed[ysas_rotational_broadening_param_ndxs[1]]=1
 	allconfig={fixed:fixed $
-		,ub:[waveub, psfub,   2, 2,   25,  .0005d,   0.5, 40000] $
-		,lb:[wavelb, psflb,   0, 0,   .001, -.0005d,   -.5,-40000] $
+		,ub:[waveub, psfub,   2, 2,   vsini_ub,  .0005d,   0.5, 40000] $
+		,lb:[wavelb, psflb,   0, 0,   vsini_lb, -.0005d,   -.5,-40000] $
 		,params: dblarr(ysas_MAX_NUM_FIT_PARAMS) $
 		,scale:[wavescale, psfscale, .1, .1, vsiniscale, rvscale, 0.01, 0.001] $
 		,mode:'Final' $
@@ -161,7 +163,35 @@ function getM2FSFitConfig, type, tol=tol, wavescalemult=wavescalemult, RVFINE=RV
 		,tol:tol $
 		,vsini:0d}
 
-		
+    fixed[*]=0
+	fixed[ysas_rv_param_ndx]=1
+	fixed[ysas_rotational_broadening_param_ndxs[1]]=1
+	norvconfig={fixed:fixed $
+		    ,ub:[waveub, psfub,   2, 2,   vsini_ub,    0.5, 40000] $
+		    ,lb:[wavelb, psflb,   0, 0,   vsini_lb,   -.5,-40000] $
+		    ,params: dblarr(ysas_MAX_NUM_FIT_PARAMS) $
+		    ,scale:[wavescale, psfscale, .1, .1, vsiniscale, 0.01, 0.001] $
+		    ,mode:'Final' $
+		    ,fftenable:0b $
+		    ,fromexisting:1b $
+		    ,maxreps:10 $
+		    ,tol:tol $
+		    ,vsini:0d}
+
+	fixed[*]=0
+	fixed[ysas_wavelength_param_ndxs]=1
+	fixed[ysas_rotational_broadening_param_ndxs[1]]=1
+	nowaveconfig={fixed:fixed $
+	    ,ub:[ psfub,   2, 2,   vsini_ub,  .0005d,   0.5, 40000] $
+	    ,lb:[ psflb,   0, 0,   vsini_lb, -.0005d,   -.5,-40000] $
+	    ,params: dblarr(ysas_MAX_NUM_FIT_PARAMS) $
+	    ,scale:[psfscale, .1, .1, vsiniscale, rvscale, 0.01, 0.001] $
+	    ,mode:'Final' $
+	    ,fftenable:0b $
+	    ,fromexisting:1b $
+	    ,maxreps:10 $
+	    ,tol:tol $
+	    ,vsini:0d}
 	
 case type of
 	
@@ -172,6 +202,8 @@ case type of
 	'nostellar':return,nostellarconfig
     'nocalib':return,nocalibconfig
 	'init':return,initconfig
+	'norv':return,norvconfig
+	'nowave':return,nowaveconfig
 	else: message,'Invalid type'
 	
 endcase	

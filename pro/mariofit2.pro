@@ -118,7 +118,7 @@ o49wave=[714.68180d-3,   3.6283054e-06,   3.8202046e-09,   -4.9249632e-12,$
 
 o49waveprimer=[714.16610d-3,   5.2577146e-06,  -1.4535988e-10,replicate(0d,5)]
 
-o49init=[o49waveprimer,  o49psf, .63, .4, vsini, .6, rv/3d8, 0, .01]
+o49init=[o49waveprimer,  o49psf, .63, .4, vsini, .6, rv/299792458d, 0, .01]
 
 ;Best output so far, solution is not right.
 ;Wave:      0.71467391   3.6286251e-06   3.8240148e-09  -4.9260691e-12   3.4141454e-15  -1.3304221e-18   2.7215776e-22  -2.2728853e-26
@@ -139,14 +139,14 @@ snr_limit=12
 ;for i=0, nspec-1 do (*spectra[i]).fitparams=o49init
 ;		;Do this so I can call plotspectrumfit
 ;for i=0, nspec-1 do (*spectra[i]).fitregion=strjoin(strtrim(ysas_fit_region,1),',')
-;for i=0, nspec-1 do (*spectra[i]).fitparams[ysas_rv_param_ndx]=(*spectra[i]).ysasheader.baryv/3d8
+;for i=0, nspec-1 do (*spectra[i]).fitparams[ysas_rv_param_ndx]=(*spectra[i]).ysasheader.baryv/299792458d
 ;
 ;endfor
 ;
 ;
 ;dofit=reviewspecs(spectra)
 
-restore,'./Desktop/spectra.sav'
+restore,'./m2fs_data/spectra.sav'
 spectra=spectra[where(spectra ne ptr_new(),nspec)]
 ;Filter based on snr
 snr=dblarr(nspec)
@@ -154,43 +154,55 @@ for i=0,nspec-1 do snr[i]=computes2n(*spectra[i],[1200,2500])
 snrspectra=spectra[where(snr gt snr_limit,nspec)]
 snrdofit=dofit[where(snr gt snr_limit,nspec)]
 
+snrdofit[0:2]=0
+snrdofit=~snrdofit
 
+for i=0,2 do (*snrspectra[i]).synthspec='5400-4.50-0.5.PHOENIX.sav'
+temp_logg='5400-4.50-0.5.PHOENIX.sav'
 
 ;Phase One
 stop
+for i=0,2 do (*spectra[i]).fitparams[ysas_veiling_param_ndx]=0
+for i=0,2 do (*spectra[i]).fitparams[ysas_norm_offset_param_ndxs]=[0,0]
 fitSpectra, snrspectra, '', temp_logg, airmass, results, $
 	CONFIG=getM2FSfitconfig('init', tol=1d-6), STATUS=STATUS, $
-	CHISQUARE_LIMIT=30000d, MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~snrdofit, $
+	CHISQUARE_LIMIT=30000d+200, MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~snrdofit, $
 	CHISQUARE_THRESH=1d
 
-stop
 
-fitSpectra, snrspectra[, '', temp_logg, airmass, results, $
-	CONFIG=getM2FSfitconfig('all', tol=1d-6, wavescalemult=1), STATUS=STATUS, $
-	CHISQUARE_LIMIT=30000d, $
-	MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~snrdofit, CHISQUARE_THRESH=1
 
+;fitSpectra, snrspectra, '', temp_logg, airmass, results, $
+;	CONFIG=getM2FSfitconfig('all', tol=1d-6, wavescalemult=1), STATUS=STATUS, $
+;	CHISQUARE_LIMIT=30000d, $
+;	MAX_FITSPECTRA_CYCLES=5, EXCLUDE=~snrdofit, CHISQUARE_THRESH=1
 
 
 tmp=dblarr(3,ysas_max_num_fit_params) & for i=0,2 do tmp[i,*]=(*spectra[i]).fitparams
-for i=0, 2 do primelambdasoln,*spectra[i],49, /pick_manually
-for i=0,2 do (*spectra[i]).fitparams[ysas_veiling_param_ndx]=0
+;for i=0, 2 do primelambdasoln,*spectra[i],49, /pick_manually
+
 for i=0,2 do (*spectra[i]).fitparams[ysas_psf_param_ndxs]=o49psf
+for i=0,2 do (*spectra[i]).fitparams[ysas_veiling_param_ndx]=0
 for i=0,2 do (*spectra[i]).fitparams[ysas_norm_offset_param_ndxs]=[0,0]
-fitSpectra, snrspectra[0:2], '', temp_logg, airmass, results, $
-    CONFIG=getM2FSfitconfig('nostellar', tol=1d-10), STATUS=STATUS, CHISQUARE_LIMIT=30000d, $
-    MAX_FITSPECTRA_CYCLES=15, EXCLUDE=~snrdofit[0:2], CHISQUARE_THRESH=.01;,SCALE_CHANGE=.5
+fitSpectra, snrspectra[0:1], '', temp_logg, airmass, results, $
+    CONFIG=getM2FSfitconfig('nostellar', tol=1d-6), STATUS=STATUS, CHISQUARE_LIMIT=30000d+200, $
+    MAX_FITSPECTRA_CYCLES=400, EXCLUDE=~snrdofit[0:1], CHISQUARE_THRESH=1d-7;,SCALE_CHANGE=.5
+fitSpectra, snrspectra[0:1], '', temp_logg, airmass, results, $
+    CONFIG=getM2FSfitconfig('nostellar', tol=5d-12), STATUS=STATUS, CHISQUARE_LIMIT=30000d+200, $
+    MAX_FITSPECTRA_CYCLES=150, EXCLUDE=~snrdofit[0:1], CHISQUARE_THRESH=1d-7;,SCALE_CHANGE=.5
+
 for i=0,2 do (*spectra[i]).fitparams[ysas_veiling_param_ndx]=tmp[i,ysas_veiling_param_ndx]
 
+stop
+
 fitSpectra, snrspectra[0:2], '', temp_logg, airmass, results, $
-    CONFIG=getM2FSfitconfig('all', tol=1d-10,rvfine=100,wavescalemult=.1), $
+    CONFIG=getM2FSfitconfig('all', tol=1d-8,rvfine=100,wavescalemult=.1), $
     STATUS=STATUS, CHISQUARE_LIMIT=30000d, $
     MAX_FITSPECTRA_CYCLES=15, EXCLUDE=~snrdofit[0:2], $
     CHISQUARE_THRESH=.1,RV_THRESH=.5
 
 
-(*spectra[2]).fitparams=[o49wave,o49psf, .63, .4, vsini, .6, rv/3d8, 0, .01]
-; (*snrspectra[2]).fitparams[ysas_rv_param_ndx]=((*snrspectra[1]).fitparams[ysas_rv_param_ndx]*3d8 + (*snrspectra[1]).ysasheader.baryv - (*snrspectra[2]).ysasheader.baryv)/3d8
+(*spectra[2]).fitparams=[o49wave,o49psf, .63, .4, vsini, .6, rv/299792458d, 0, .01]
+; (*snrspectra[2]).fitparams[ysas_rv_param_ndx]=((*snrspectra[1]).fitparams[ysas_rv_param_ndx]*299792458d + (*snrspectra[1]).ysasheader.baryv - (*snrspectra[2]).ysasheader.baryv)/3d8
 stop
 
 end

@@ -6,7 +6,7 @@ conf=getM2FSfitconfig('all', tol=1d-6,/rvfine)
 
 tols=reverse(10^(-11+dindgen(8)))
 
-rvscales=[1, 10, 100, 1000, 10000]/3d8
+rvscales=[1, 10, 100, 1000, 10000]/299792458d
 
 
 ;Get extracted spectrum

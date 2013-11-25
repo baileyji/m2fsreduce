@@ -45,6 +45,11 @@ def mergeimage(frameno,side=None):
              ( 2056, 4112, 2048, 4096),
              (2056, 4112,0, 2048)]
 
+    quadLoc=[(0, crop[3], 0, crop[1]),
+             (0,crop[3], crop[1], 2*crop[1]),
+             ( crop[3], 2*crop[3], crop[1], 2*crop[1]),
+             (crop[3],2*crop[3],0, crop[1])]
+
     #Create a list of the quadrant's data to loop through
     quadrantData=[quadrant1[0].data, quadrant2[0].data,
                  quadrant3[0].data, quadrant4[0].data]

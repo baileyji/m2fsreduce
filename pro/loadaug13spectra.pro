@@ -48,34 +48,34 @@ ysas_fit_region=[350,3000]
 ;Grab RV standard spectra
 sfile=datadir+'spectra/r0089.ec_2.txt'
 spectra[ndx]=readMarioSpecFile(sfile, 49, $
-	temp_logg='5500_4.55', $
+	temp_logg='5400-4.50-0.5.PHOENIX.sav', $
 	image_file=datadir+'image/r0089.fits', $
 	fiber='R5-02', $
 	objname='HIP 10798', $
 	nom_vsini=3.26d, $
-	nom_rv=7000,/PTR)
+	nom_rv=7459,/PTR)
 (*spectra[ndx]).fiberno=5*16+2
 ndx+=1
 
 sfile=datadir+'spectra/r0090.ec_2.txt'
 spectra[ndx]=readMarioSpecFile(sfile, 49, $
-	temp_logg='5500_4.55', $
+	temp_logg='5400-4.50-0.5.PHOENIX.sav', $
 	image_file=datadir+'image/r0090.fits', $
 	fiber='R5-02', $
 	objname='HIP 10798', $
 	nom_vsini=3.26d, $
-	nom_rv=7000,/PTR)
+	nom_rv=7459,/PTR)
 (*spectra[ndx]).fiberno=5*16+2
 ndx+=1
 
 sfile=datadir+'spectra/r0109.ec_2.txt'
 spectra[ndx]=readMarioSpecFile(sfile, 49, $
-   temp_logg='5500_4.55', $
+   temp_logg='5400-4.50-0.5.PHOENIX.sav', $
    image_file=datadir+'image/r0109.fits', $
    fiber='R5-02', $
    objname='HIP 10798', $
    nom_vsini=3.26d, $
-   nom_rv=7000,/PTR)
+   nom_rv=7459,/PTR)
 (*spectra[ndx]).fiberno=5*16+2
 ndx+=1
 
